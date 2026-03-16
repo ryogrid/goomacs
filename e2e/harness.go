@@ -117,6 +117,14 @@ func (h *Harness) CapturePane() string {
 	return strings.Join(lines, "\n")
 }
 
+// Resize changes the tmux window dimensions, triggering a SIGWINCH in the running program.
+func (h *Harness) Resize(width, height int) {
+	cmd := exec.Command("tmux", "resize-window", "-t", h.session, "-x", fmt.Sprintf("%d", width), "-y", fmt.Sprintf("%d", height))
+	cmd.CombinedOutput() //nolint: errcheck
+	h.width = width
+	h.height = height
+}
+
 // Close kills the tmux session.
 func (h *Harness) Close() {
 	exec.Command("tmux", "kill-session", "-t", h.session).Run() //nolint: errcheck
