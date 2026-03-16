@@ -30,6 +30,14 @@ goomacs provides a familiar Emacs keybinding experience for quick file editing w
 Requires Go 1.24 or later.
 
 ```bash
+go install github.com/ryogrid/goomacs@latest
+```
+
+This installs the `goomacs` binary to `$GOPATH/bin` (default: `~/go/bin`). Make sure this directory is in your `$PATH`.
+
+To build from source instead:
+
+```bash
 go build -o goomacs .
 ```
 

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"goomacs/term"
+	"github.com/ryogrid/goomacs/term"
 )
 
 // lastGrepCommand stores the most recently executed grep command for re-execution via g.

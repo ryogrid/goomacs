@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"goomacs/term"
+	"github.com/ryogrid/goomacs/term"
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"

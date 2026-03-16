@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"goomacs/term"
+	"github.com/ryogrid/goomacs/term"
 )
 
 const tabWidth = 8
