@@ -199,4 +199,111 @@ func TestBufferManagement(t *testing.T) {
 		}
 		h.AssertStatusBar(t, "uniqueprefix_alpha.txt")
 	})
+
+	t.Run("KillBufferUpdatesBufferList", func(t *testing.T) {
+		dir := t.TempDir()
+		f1 := filepath.Join(dir, "lc1.txt")
+		f2 := filepath.Join(dir, "lc2.txt")
+		os.WriteFile(f1, []byte("content1\n"), 0o644)
+		os.WriteFile(f2, []byte("content2\n"), 0o644)
+
+		h := newHarnessInDir(t, dir, "lc1.txt", "lc2.txt")
+
+		if err := h.WaitForContent("lc1.txt", 5*time.Second); err != nil {
+			t.Fatalf("file did not open: %v", err)
+		}
+
+		// Open buffer list to create the *Buffer List* buffer
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("C-b")
+		time.Sleep(300 * time.Millisecond)
+
+		// Verify both files appear
+		screen := h.CapturePane()
+		if !strings.Contains(screen, "lc1.txt") {
+			t.Error("buffer list should contain lc1.txt")
+		}
+		if !strings.Contains(screen, "lc2.txt") {
+			t.Error("buffer list should contain lc2.txt")
+		}
+
+		// Switch back to previous buffer
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("b")
+		time.Sleep(200 * time.Millisecond)
+		h.SendKeys("Enter")
+		time.Sleep(300 * time.Millisecond)
+
+		// Kill lc1.txt by name
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("k")
+		time.Sleep(200 * time.Millisecond)
+		h.SendKeys("lc1.txt")
+		time.Sleep(100 * time.Millisecond)
+		h.SendKeys("Enter")
+		time.Sleep(300 * time.Millisecond)
+
+		// Open buffer list again
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("C-b")
+		time.Sleep(300 * time.Millisecond)
+
+		// Verify killed buffer is NOT shown
+		screen = h.CapturePane()
+		if strings.Contains(screen, "lc1.txt") {
+			t.Error("killed buffer lc1.txt should not appear in buffer list")
+		}
+		// Verify remaining buffer IS shown
+		if !strings.Contains(screen, "lc2.txt") {
+			t.Error("buffer list should still contain lc2.txt")
+		}
+	})
+
+	t.Run("KillBufferTabCompletion", func(t *testing.T) {
+		dir := t.TempDir()
+		os.WriteFile(filepath.Join(dir, "tk_alpha.txt"), []byte("alpha\n"), 0o644)
+		os.WriteFile(filepath.Join(dir, "tk_beta.txt"), []byte("beta\n"), 0o644)
+
+		h := newHarnessInDir(t, dir, "tk_alpha.txt", "tk_beta.txt")
+
+		if err := h.WaitForContent("tk_alpha.txt", 5*time.Second); err != nil {
+			t.Fatalf("file did not open: %v", err)
+		}
+
+		// C-x k to open kill-buffer prompt
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("k")
+		time.Sleep(200 * time.Millisecond)
+
+		// Type the common prefix "tk_"
+		h.SendKeys("tk_")
+		time.Sleep(100 * time.Millisecond)
+
+		// Press Tab to trigger completion
+		h.SendKeys("Tab")
+		time.Sleep(300 * time.Millisecond)
+
+		// With two matches, message line should show both options
+		msgLine := h.Capture()[h.height-1]
+		if !strings.Contains(msgLine, "tk_alpha.txt") || !strings.Contains(msgLine, "tk_beta.txt") {
+			t.Errorf("tab completion should show both matches, got: %s", msgLine)
+		}
+
+		// Type 'a' to narrow to alpha, press Tab again for single completion
+		h.SendKeys("a")
+		time.Sleep(100 * time.Millisecond)
+		h.SendKeys("Tab")
+		time.Sleep(300 * time.Millisecond)
+
+		// The minibuffer should now contain the full filename
+		msgLine = h.Capture()[h.height-1]
+		if !strings.Contains(msgLine, "tk_alpha.txt") {
+			t.Errorf("single tab completion should show tk_alpha.txt, got: %s", msgLine)
+		}
+	})
 }

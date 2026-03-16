@@ -3,6 +3,7 @@ package e2e
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -496,5 +497,45 @@ func TestFindGrep(t *testing.T) {
 		if row1 != row2 {
 			t.Errorf("cursor moved after p at first result: was row %d, now row %d", row1, row2)
 		}
+	})
+
+	t.Run("SwitchWindowFromGrep", func(t *testing.T) {
+		dir := setupGrepFixtures3Files(t)
+		h := newHarnessInDir(t, dir)
+
+		if err := h.WaitForContent("*scratch*", 5*time.Second); err != nil {
+			t.Fatalf("goomacs did not start: %v", err)
+		}
+
+		// Split window vertically (C-x 2)
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("2")
+		time.Sleep(300 * time.Millisecond)
+
+		// Run find-grep to get *grep* buffer (use "." since we started in dir)
+		invokeFindGrep(t, h, "grep -rn marker .")
+		if err := h.WaitForContent("*grep*", 10*time.Second); err != nil {
+			t.Logf("DEBUG screen after grep:\n%s", h.CapturePane())
+			t.Fatalf("grep buffer did not appear: %v", err)
+		}
+		// Verify *grep* is shown somewhere on screen (may be in top or bottom window)
+		h.AssertScreenContains(t, "*grep*")
+
+		// C-x o to switch to other window
+		h.SendKeys("C-x")
+		time.Sleep(50 * time.Millisecond)
+		h.SendKeys("o")
+		time.Sleep(300 * time.Millisecond)
+
+		// Check that message line does NOT say "Buffer is read-only"
+		msgLine := h.Capture()[h.height-1]
+		if strings.Contains(msgLine, "Buffer is read-only") {
+			t.Error("C-x o was blocked by read-only guard in grep buffer")
+		}
+
+		// After C-x o, we should be in the *scratch* window now.
+		// The bottom window's status bar should show *scratch* as active.
+		h.AssertStatusBar(t, "*scratch*")
 	})
 }

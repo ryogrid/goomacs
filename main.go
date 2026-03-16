@@ -33,6 +33,47 @@ var minibufferInput []rune          // current input text
 var minibufferCursorPos int         // cursor position within minibufferInput
 var minibufferCallback func(string) // called with input on Enter
 
+// refreshBufferList updates the content of the *Buffer List* buffer if it exists.
+// This should be called after any operation that changes the buffers slice.
+func refreshBufferList() {
+	var blBuf *Buffer
+	for _, b := range buffers {
+		if b.Filename == "*Buffer List*" {
+			blBuf = b
+			break
+		}
+	}
+	if blBuf == nil {
+		return
+	}
+	var lines []string
+	for i, b := range buffers {
+		marker := " "
+		if i == activeBufferIdx {
+			marker = ">"
+		}
+		modFlag := " "
+		if b.Modified {
+			modFlag = "*"
+		}
+		name := b.Filename
+		if name == "" {
+			name = "[No Name]"
+		}
+		lines = append(lines, fmt.Sprintf("%s%s %s", marker, modFlag, name))
+	}
+	content := strings.Join(lines, "\n")
+	rawLines := strings.Split(content, "\n")
+	blBuf.Lines = make([][]rune, len(rawLines))
+	for i, rl := range rawLines {
+		blBuf.Lines[i] = []rune(rl)
+	}
+	if blBuf.CursorR >= len(blBuf.Lines) {
+		blBuf.CursorR = len(blBuf.Lines) - 1
+	}
+	blBuf.Modified = false
+}
+
 // bufColToVisualCol converts a buffer column index to a visual (screen) column
 // for the given line, accounting for tab expansion.
 func bufColToVisualCol(line []rune, bufCol int) int {
@@ -518,6 +559,30 @@ func main() {
 							continue
 						}
 						message = minibufferPrompt + string(minibufferInput)
+					} else if strings.HasPrefix(minibufferPrompt, "Kill buffer:") || minibufferPrompt == "Switch to buffer: " {
+						input := string(minibufferInput)
+						var names []string
+						for _, b := range buffers {
+							name := b.Filename
+							if name == "" {
+								name = "[No Name]"
+							}
+							if strings.HasPrefix(name, input) {
+								names = append(names, name)
+							}
+						}
+						if len(names) == 1 {
+							minibufferInput = []rune(names[0])
+							minibufferCursorPos = len(minibufferInput)
+						} else if len(names) > 1 {
+							common := longestCommonPrefix(names)
+							minibufferInput = []rune(common)
+							minibufferCursorPos = len(minibufferInput)
+							message = minibufferPrompt + string(minibufferInput) + " [" + strings.Join(names, " ") + "]"
+							redraw()
+							continue
+						}
+						message = minibufferPrompt + string(minibufferInput)
 					}
 				case term.KeyRune:
 					tail := make([]rune, len(minibufferInput[minibufferCursorPos:]))
@@ -571,7 +636,7 @@ func main() {
 			}
 
 			// Handle read-only buffer restrictions
-			if buf.ReadOnly {
+			if buf.ReadOnly && !prefixCx {
 				switch ev.Key() {
 				case term.KeyRune:
 					if ev.Modifiers()&term.ModAlt == 0 {
@@ -641,31 +706,6 @@ func main() {
 						return
 					}
 				case term.KeyCtrlB:
-					// Build buffer list content
-					var lines []string
-					for i, b := range buffers {
-						marker := " "
-						if i == activeBufferIdx {
-							marker = ">"
-						}
-						modFlag := " "
-						if b.Modified {
-							modFlag = "*"
-						}
-						name := b.Filename
-						if name == "" {
-							name = "[No Name]"
-						}
-						lines = append(lines, fmt.Sprintf("%s%s %s", marker, modFlag, name))
-					}
-					content := ""
-					for i, l := range lines {
-						if i > 0 {
-							content += "\n"
-						}
-						content += l
-					}
-
 					// Find existing *Buffer List* or create new one
 					var blBuf *Buffer
 					blIdx := -1
@@ -683,16 +723,11 @@ func main() {
 						blIdx = len(buffers) - 1
 					}
 
-					// Update content
-					rawLines := strings.Split(content, "\n")
-					blBuf.Lines = make([][]rune, len(rawLines))
-					for i, rl := range rawLines {
-						blBuf.Lines[i] = []rune(rl)
-					}
+					// Update content via shared helper
+					refreshBufferList()
 					blBuf.CursorR = 0
 					blBuf.CursorC = 0
 					blBuf.ScrollOffset = 0
-					blBuf.Modified = false
 
 					// Switch to the buffer list buffer
 					previousBufferIdx = activeBufferIdx
@@ -919,6 +954,7 @@ func main() {
 										}
 									}
 									message = fmt.Sprintf("Killed buffer %s", killedName)
+									refreshBufferList()
 									return
 								}
 
@@ -950,6 +986,7 @@ func main() {
 									}
 								}
 								message = fmt.Sprintf("Killed buffer %s", killedName)
+								refreshBufferList()
 							}
 
 							// Check if buffer is modified
