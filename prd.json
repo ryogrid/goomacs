@@ -290,7 +290,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "For M-x commands, send Escape then x with 50ms gap, then type the command name and Enter. To set a region, press C-Space to set mark, then move cursor (C-n for multi-line). Create temp .go and .py files with known content for testing. After comment-region, capture the screen and verify '// ' was prepended to each line in the region."
     },
     {

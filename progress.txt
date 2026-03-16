@@ -44,6 +44,8 @@
 - Empty buffer invariant: always at least 1 empty line ([][]rune{{}}), never zero lines
 - Grep buffer stdout is TrimRight("\n") before Split — exactly N lines for N results, no trailing empty line
 - Mode handler dispatch runs BEFORE read-only guard — grep mode Enter works despite ReadOnly=true
+- tmux capture-pane renders tabs as spaces — cannot assert literal "\t" in screen captures; use text content assertions instead
+- invokeCommand(h, "cmdName") helper: Escape+50ms+x+200ms+cmdName+100ms+Enter+300ms for M-x commands
 
 ## Progress: Comprehensive E2E Testing Framework
 
@@ -290,4 +292,27 @@
   - To test Enter on non-result lines, use a command that produces non-parseable output (e.g., `echo 'HEADER' && grep ...`)
   - invokeFindGrep helper clears 50 chars of default command with BSpace — sufficient for the default "find . -type f -exec grep -nH -e '' {} +" (45 chars)
   - Grep results from `grep -rnH marker . | sort` on 3-file fixture produce 4 results: a.txt:2, b.txt:1, b.txt:3, c.txt:3
+---
+
+## 2026-03-16 - US-014
+- Created e2e/comprehensive_comment_test.go with TestComprehensiveComment test group (14 subtests)
+- Tests comment-region on Go file: adds "// " prefix to selected lines
+- Tests uncomment-region on Go file: removes "// " prefix from selected lines
+- Tests comment-region with no active region: shows "No region selected" error
+- Tests uncomment-region with no active region: shows "No region selected" error
+- Tests comment-region on Python file: adds "# " prefix
+- Tests uncomment-region tolerates leading whitespace before comment marker
+- Tests comment/uncomment round-trip: content returns to original state (Go and Python)
+- Tests single-line comment-region, uncomment without space after marker
+- Tests comment-region marks buffer as modified, deactivates mark after commenting
+- Tests multiple invocations on non-contiguous lines
+- Tests Python uncomment with leading whitespace preservation
+- All 14 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_comment_test.go (new)
+- **Learnings for future iterations:**
+  - tmux capture-pane renders tabs as spaces — cannot assert literal "\t" in screen captures; assert the text content only
+  - comment-region adds "// " (with space) for Go, "# " (with space) for Python — detectCommentStyle uses go-enry
+  - comment/uncomment both call SaveUndo, DeactivateMark, set Modified=true, HighlightDirty=true
+  - invokeCommand helper: Escape+50ms+x+200ms+cmdName+100ms+Enter+300ms — reusable for any M-x command
+  - shortTempDir/shortTempFileInDir helpers use /tmp/g* prefix for short status bar paths
 ---
