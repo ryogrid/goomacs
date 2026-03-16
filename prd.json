@@ -18,7 +18,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Read main.go, buffer.go, command.go, grep.go to enumerate ALL key bindings, modes, and buffer states. Include factors for: editor mode (7 levels), cursor row position (4 levels), cursor column position (4 levels), buffer content type (6 levels), modification state (2 levels), mark state (3 levels), kill ring state (2 levels), undo stack state (3 levels), read-only flag (2 levels), key class (7 levels), file backing (3 levels), highlighter state (2 levels), window count (3 levels), active window (2 levels), terminal size (3 levels)."
     },
     {
@@ -34,7 +34,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "This is a design document, not code. Focus on being exhaustive for no-op keys — every mode should have at least 5 no-op test cases defined. For boundary conditions, focus on the extremes: empty buffers, maximum undo stack (100 entries, maxUndoEntries constant in buffer.go), and minimum window sizes."
     },
     {

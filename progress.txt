@@ -29,6 +29,38 @@
 - For Alt keys in e2e tests, use tmux M-n/M-p syntax directly — do NOT use Escape + sleep + key
 - grep -rnH output order is not alphabetical — pipe through | sort for predictable test assertions
 - maxUndoEntries = 100 in buffer.go
+- C-x prefix fallthrough: unmatched second key cancels prefix, then key is processed by normal dispatch
+- Confirm mode only accepts 'y', 'n', C-g — all other keys silently ignored
+- Search mode: unrecognized keys exit search and re-post via screen.PostEvent for normal processing
+- Empty buffer invariant: always at least 1 empty line ([][]rune{{}}), never zero lines
 
 ## Progress: Comprehensive E2E Testing Framework
+
+## 2026-03-16 - US-001
+- Created tasks/e2e-factor-analysis.md with comprehensive factor analysis table
+- 19 factors identified with 66 total levels across all categories
+- Factors organized by: Mode State, Cursor State, Buffer State, Region/Selection, Input, File System, Rendering, Window Configuration, Terminal Configuration, Search, Buffer Configuration, Minibuffer
+- Each factor assigned priority: 5 Critical, 12 Important, 1 Edge-case
+- Files changed: tasks/e2e-factor-analysis.md (new)
+- **Learnings for future iterations:**
+  - The codebase has 7 editor modes (Normal, Search Forward, Search Backward, Minibuffer, Confirm, C-x Prefix, Grep) — all dispatched in the main event loop
+  - Buffer-local mode dispatch via `modeHandlers` map currently only handles "grep"
+  - `maxUndoEntries = 100` in buffer.go — relevant for undo stack limit testing
+  - Minibuffer tab completion varies by context: file paths for C-x C-f, command names for M-x
+  - Kill ring consecutive accumulation controlled by `lastKill` bool flag on Buffer
+---
+
+## 2026-03-16 - US-002
+- Created tasks/e2e-noop-boundary-cases.md with structured test case tables
+- 41 no-op test cases across all 7 modes (Normal, Search, Minibuffer, Confirm, C-x Prefix, Grep, Read-only)
+- 75 boundary condition test cases covering: empty buffer, single char, movement boundaries, page up/down, undo stack limits, kill accumulation, region edges, window management, search boundaries, large content, min window size, file operations, tab completion, quit behavior
+- 116 total test cases, each with ID, precondition, input sequence, expected post-condition
+- Files changed: tasks/e2e-noop-boundary-cases.md (new)
+- **Learnings for future iterations:**
+  - C-x prefix fallthrough: when prefix is cancelled by unrecognized key, that key still gets processed by normal dispatch (e.g., C-x C-n cancels prefix AND moves cursor down; C-x a cancels prefix AND inserts 'a')
+  - Search mode exit on unrecognized keys: any key not handled by search (C-s, C-r, C-g, Enter, Backspace, runes) exits search and re-posts the event via screen.PostEvent
+  - Confirm mode is very strict: only 'y' rune, 'n' rune, and C-g are handled; all other keys (including Enter, control keys, other runes) are silently ignored
+  - Grep buffer is ReadOnly=true, so unbound rune keys get "Buffer is read-only" via the read-only guard, not from grep handler
+  - Empty buffer always has at least 1 empty line ([][]rune{{}}) — never zero lines
+---
 
