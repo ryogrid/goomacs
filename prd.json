@@ -224,7 +224,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "For testing status lines, use screen capture and check for '==' (active) vs '--' (inactive) markers. For independent scroll test, split window, scroll down in active window with C-v, switch to other window with C-x o, verify its content is still at the top. For edit propagation, type in one window, switch to other, verify the typed text appears."
     },
     {

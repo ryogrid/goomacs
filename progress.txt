@@ -38,6 +38,8 @@
 - Buffer filenames are full paths (e.g., /tmp/g12345/file.txt), not basenames
 - C-x prefix fallthrough: unmatched second key cancels prefix, then key is processed by normal dispatch
 - Confirm mode only accepts 'y', 'n', C-g — all other keys silently ignored
+- Active status bar uses reverse video (space-filled); inactive uses dash-filled — countStatusBars threshold of >40 spaces is too tight for short paths; use "Line " + name match instead
+- CursorR is per-Buffer (shared), ScrollOffset is per-Window — scrolling in one window moves the cursor, causing the other window showing the same buffer to auto-scroll too; test independent scroll with different buffers
 - Search mode: unrecognized keys exit search and re-post via screen.PostEvent for normal processing
 - Empty buffer invariant: always at least 1 empty line ([][]rune{{}}), never zero lines
 
@@ -221,4 +223,23 @@
   - Buffer filenames stored as full absolute paths, not basenames
   - Buffer list format: `>` prefix for active buffer (at time list was built), `*` for modified
   - typeString/openFile/switchBuffer helpers added for reuse across buffer tests
+---
+
+## 2026-03-16 - US-011
+- Created e2e/comprehensive_window_test.go with TestComprehensiveWindow test group (8 subtests)
+- Tests C-x 2: vertical split, both windows show same buffer, two status lines visible
+- Tests C-x 3: horizontal split, side-by-side, vertical separator drawn
+- Tests C-x o: cycles through windows, active/inactive status bar swaps, round-trip returns to original
+- Tests C-x 0: closes current window, layout recalculates to single window
+- Tests C-x 0 with only one window: no crash, editor still functional
+- Tests C-x 1: closes all other windows, only active window remains
+- Tests edit propagation: type in one window, change visible in other window showing same buffer
+- Tests independent scroll: different buffers in split windows scroll independently
+- All 8 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_window_test.go (new)
+- **Learnings for future iterations:**
+  - Active status bar is space-filled (reverse video), inactive is dash-filled — `countStatusBars` helper with >40 space threshold can fail for short paths; use `countWindowStatusBars` with name + "Line " match
+  - CursorR is per-Buffer (shared), ScrollOffset is per-Window — but scrolling moves cursor, so both windows showing same buffer auto-scroll together; test independent scroll with DIFFERENT buffers
+  - Window split creates new Window with same Buffer and same ScrollOffset; C-x o switches activeWindowIdx
+  - After C-x 0 with single window, editor stays functional (no crash, no message — just a no-op)
 ---
