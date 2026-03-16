@@ -78,3 +78,15 @@
   - C-x prefix fallthrough means some "no-op" keys actually DO something (e.g., C-x C-n cancels prefix AND moves down, C-x a cancels prefix AND inserts 'a')
   - For test implementation, SmallML (5-30 lines of known content) is the standard baseline buffer
 ---
+
+## 2026-03-16 - US-004
+- Created e2e/failure_logger.go with RecordFailure and ResetFailureLog functions
+- RecordFailure is thread-safe (sync.Mutex), appends to tasks/e2e-failures.json
+- Each record: test_case_id, test_name, input_sequence, expected_state, actual_state, severity, category, timestamp (RFC3339)
+- ResetFailureLog clears the file to an empty JSON array
+- Files changed: e2e/failure_logger.go (new)
+- **Learnings for future iterations:**
+  - failureLogPath is "tasks/e2e-failures.json" — relative to project root (where tests run from)
+  - Call ResetFailureLog() in TestMain or at suite start to clear previous run's data
+  - Severity levels: "critical", "high", "medium", "low"
+---

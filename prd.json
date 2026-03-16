@@ -72,7 +72,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The failure logger is a helper used by all comprehensive test files. It should read the existing file on first write (if any), append the new record, and write back. Use encoding/json with MarshalIndent for readable output. The file path should be relative to the project root — use a package-level var or detect it from the test binary location."
     },
     {
