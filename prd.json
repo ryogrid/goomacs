@@ -417,7 +417,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": "If tasks/e2e-failures.json has no medium or low entries, mark this story as passed immediately. Medium bugs include: cosmetic rendering issues, slightly wrong message text. Low bugs include: minor inconsistencies that don't affect functionality. For low-severity issues that are not worth fixing, update the notes field in e2e-failures.json explaining why."
     },
     {
