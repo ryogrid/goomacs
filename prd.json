@@ -202,7 +202,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "For 'same file already open' test, open a file with C-x C-f, switch to scratch, then C-x C-f the same file again — verify no duplicate buffer in C-x C-b list. For kill modified buffer, type something first to make the buffer modified, then C-x k. For buffer list markers, the format is: '>' prefix for current buffer, '*' for modified."
     },
     {

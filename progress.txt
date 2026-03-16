@@ -33,6 +33,9 @@
 - For Alt keys in e2e tests, use tmux M-n/M-p syntax directly — do NOT use Escape + sleep + key
 - grep -rnH output order is not alphabetical — pipe through | sort for predictable test assertions
 - maxUndoEntries = 100 in buffer.go
+- Status bar format: ` <fullpath> [Modified]  Line X/Y, Col Z` — long paths truncate; use short temp dirs in tests
+- When goomacs starts with file args, no *scratch* buffer is created; only when no args
+- Buffer filenames are full paths (e.g., /tmp/g12345/file.txt), not basenames
 - C-x prefix fallthrough: unmatched second key cancels prefix, then key is processed by normal dispatch
 - Confirm mode only accepts 'y', 'n', C-g — all other keys silently ignored
 - Search mode: unrecognized keys exit search and re-post via screen.PostEvent for normal processing
@@ -199,4 +202,23 @@
   - Undo after save works: undo stack is preserved across saves; undoing past save point shows [Modified]
   - "Undo" message shown on successful undo, "No further undo information" on empty stack
   - maxUndoEntries = 100 — tested with 10 edits/undos; full limit test deferred to avoid slow tests
+---
+
+## 2026-03-16 - US-010
+- Created e2e/comprehensive_buffer_test.go with TestComprehensiveBuffer test group (12 subtests)
+- Tests C-x C-f: existing file (opens, content shown, status bar), nonexistent file (new empty buffer, "(New file)" message)
+- Tests C-x C-f with already-open file: switches to existing buffer, no duplicate in buffer list
+- Tests C-x b: default (previous buffer) switching, typed buffer name switching
+- Tests C-x k: unmodified buffer closes immediately, modified buffer prompts y/n confirmation
+- Tests C-x C-b: buffer list shows all buffers with correct markers (> current, * modified)
+- Tests C-x C-b + Enter: switches to selected buffer, navigate with C-n then Enter
+- All 12 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_buffer_test.go (new)
+- **Learnings for future iterations:**
+  - Go test TempDir names are very long (80+ chars) — causes status bar truncation in 80-col terminal
+  - Use shortTempFile() helper with os.MkdirTemp("/tmp", "g") for short paths (~25 chars)
+  - When starting goomacs with file args (not via C-x C-f), no *scratch* buffer exists — only file buffers
+  - Buffer filenames stored as full absolute paths, not basenames
+  - Buffer list format: `>` prefix for active buffer (at time list was built), `*` for modified
+  - typeString/openFile/switchBuffer helpers added for reuse across buffer tests
 ---
