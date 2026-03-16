@@ -9,6 +9,9 @@
 - Highlighter in highlight.go: NewHighlighter(filename) → nil if no lexer; Highlight(lines) caches [][]term.Style; StyleAt(row,col) returns cached style
 - drawWindowContent(screen, win, sh) renders buffer content in window's row range
 - Tab expansion handled in rendering (bufColToVisualCol), tabWidth = 8
+- Tab key (KeyTab) in normal mode is NOT handled — no tab insertion; only used for minibuffer completion
+- Only grep buffer has ReadOnly=true; *Buffer List* is NOT read-only
+- For read-only editing tests, use grep buffer via find-grep command
 - `buf` is a local alias for `buffers[activeBufferIdx]`
 - Window struct: Buffer, ScrollOffset, StartRow, Height, StartCol, Width; ViewHeight() = Height-1
 - recalcWindows distributes space evenly; vertical (C-x 2) stacks top/bottom, horizontal (C-x 3) side-by-side
@@ -108,4 +111,25 @@
   - M-v (page up) sent via tmux as `Escape` + 50ms sleep + `v`
   - Empty *scratch* buffer starts at (0,0) and all movement keys are no-ops
   - Page tests need longer sleep (200-300ms) due to scroll + redraw time
+---
+
+## 2026-03-16 - US-006
+- Created e2e/comprehensive_editing_test.go with TestComprehensiveEditing test group (34 subtests)
+- Tests InsertChar: ASCII at beginning/middle/end, multi-byte UTF-8 (Japanese あ)
+- Tests tab expansion: visual rendering of existing tab chars at col 0 (8 spaces) and col 3 (5 spaces), Tab key no-op in normal mode
+- Tests Backspace: middle of line, start of line (join), empty buffer, start of buffer, single char, multi-line join
+- Tests C-d: middle of line, end of line (join next), empty buffer, end of buffer, single char line, join lines
+- Tests Enter/C-j: middle (split), end, start of line, empty buffer, C-j equivalence, multiple newlines
+- Tests read-only buffer: InsertChar, Backspace, C-d, C-k, Enter/C-y all blocked with "Buffer is read-only" (using grep buffer)
+- Tests multiple insert+backspace round-trip, word insertion
+- All 34 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_editing_test.go (new)
+- **Learnings for future iterations:**
+  - Tab key (KeyTab) is NOT handled in normal editing mode — only used for minibuffer tab completion
+  - Only the grep buffer has ReadOnly=true; *Buffer List* is NOT read-only (contrary to PRD notes)
+  - For read-only buffer tests, use find-grep to create a grep buffer, then try editing operations
+  - enterGrepMode helper: Escape x → "find-grep" → Enter → clear default → type grep command → Enter → wait 2s
+  - setupGrepFixture creates a temp dir with a single main.go containing "hello" for grep to find
+  - BSpace is the tmux key name for Backspace
+  - C-j behaves identically to Enter (both InsertNewline)
 ---

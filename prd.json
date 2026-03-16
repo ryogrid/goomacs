@@ -113,7 +113,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "For UTF-8 test, insert a multibyte character like a Japanese character and verify it appears in screen capture. For tab expansion, insert a tab and use screen capture to count the visual spaces. For read-only buffer test, open a file, then create a *Buffer List* buffer (C-x C-b) which is read-only, and try editing in it."
     },
     {
