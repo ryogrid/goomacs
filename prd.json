@@ -330,7 +330,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Use 'tmux resize-window -t <session> -x <width> -y <height>' to resize the tmux window. After resize, wait a moment for SIGWINCH handling, then capture screen and verify content. For search mode resize, enter C-s and type a query, resize, then verify the message line still shows the search prompt with the query."
     },
     {

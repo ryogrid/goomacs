@@ -48,6 +48,7 @@
 - Mode handler dispatch runs BEFORE read-only guard — grep mode Enter works despite ReadOnly=true
 - tmux capture-pane renders tabs as spaces — cannot assert literal "\t" in screen captures; use text content assertions instead
 - invokeCommand(h, "cmdName") helper: Escape+50ms+x+200ms+cmdName+100ms+Enter+300ms for M-x commands
+- Harness.Resize(w, h) resizes tmux window; must send a key afterward to force redraw in capture-pane output
 
 ## Progress: Comprehensive E2E Testing Framework
 
@@ -338,4 +339,21 @@
   - Confirm mode clears the message on each key press (message = "" at top of key handler), but stays in confirm mode — verify confirm still active by testing that 'n' still works
   - Files with trailing "\n" load as N lines with trailing newline trimmed — "hello\n" is 1 line, "hello\nsecond\n" is 2 lines
   - SendKeysRepeat(key, 100) is an efficient way to test rapid key input (single tmux command)
+---
+
+## 2026-03-16 - US-016
+- Created e2e/comprehensive_resize_test.go with TestComprehensiveResize test group (5 subtests)
+- Added Resize(width, height) method to Harness in harness.go using tmux resize-window
+- Tests shrink from 80x24 to 40x12: content visible, status bar present, editor functional
+- Tests expand from 80x24 to 200x50: all 20 lines visible, status bar present, editor functional
+- Tests resize with vertical split (C-x 2): both status bars survive resize up and down
+- Tests resize during search mode: search prompt and query preserved after resize
+- Tests resize during minibuffer input: prompt and typed text preserved after resize
+- All 5 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_resize_test.go (new), e2e/harness.go (Resize method added)
+- **Learnings for future iterations:**
+  - tmux resize-window works on detached sessions but the pane content is blank until a key event triggers a redraw in goomacs
+  - After Resize(), must send a key (C-g for normal mode, C-s for search mode, C-e for minibuffer) to force content to appear in capture-pane output
+  - resizeAndRedraw helper sends C-g after resize for normal-mode tests; search/minibuffer tests use mode-appropriate keys
+  - Harness.Resize() updates h.width and h.height so Capture() trims to the correct new dimensions
 ---
