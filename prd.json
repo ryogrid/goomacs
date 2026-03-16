@@ -157,7 +157,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "For wrap-around test, create a file with 'target' on line 3 of 10. Move cursor to line 8, press C-s and type 'target' — should wrap and find it on line 3. For direction switch, press C-s to start forward search, type query, then press C-r to switch to backward. Verify cursor moves to the match before current position."
     },
     {

@@ -9,6 +9,7 @@
 - Highlighter in highlight.go: NewHighlighter(filename) → nil if no lexer; Highlight(lines) caches [][]term.Style; StyleAt(row,col) returns cached style
 - drawWindowContent(screen, win, sh) renders buffer content in window's row range
 - Tab expansion handled in rendering (bufColToVisualCol), tabWidth = 8
+- tmux capture-pane trims trailing whitespace — assert "I-search:" not "I-search: " for empty query prompts
 - Tab key (KeyTab) in normal mode is NOT handled — no tab insertion; only used for minibuffer completion
 - Only grep buffer has ReadOnly=true; *Buffer List* is NOT read-only
 - For read-only editing tests, use grep buffer via find-grep command
@@ -151,4 +152,28 @@
   - ClearLastKill is called on any non-C-k key, so C-f between kills creates separate entries
   - Kill ring entries from C-w/M-w are always separate (not affected by lastKill flag)
   - Zero-width C-w (mark == point) is a no-op — buffer unchanged, mark deactivated
+---
+
+## 2026-03-16 - US-008
+- Created e2e/comprehensive_search_test.go with TestComprehensiveSearch test group (24 subtests)
+- Tests search with no matches: forward and backward "Failing I-search" messages
+- Tests forward search wrap-around: cursor past target wraps to find it
+- Tests backward search wrap-around: cursor before target wraps to find it
+- Tests search cancel (C-g): cursor returns to original position, shows "Quit"
+- Tests search accept (Enter): cursor stays at match, message line cleared
+- Tests search exit via unrecognized key: C-e and C-a exit search and are re-processed
+- Tests empty query: Enter on empty query, C-s with empty query — no crash
+- Tests backspace in search: re-searches from original position, deleting all chars restores original
+- Tests direction switching: C-s→C-r and C-r→C-s within same search
+- Tests next/previous match cycling: C-s/C-r wrap around through all matches
+- Tests incremental cursor movement as characters are typed
+- Tests search then edit, multiple sequential searches, buffer unchanged after cancel
+- All 24 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_search_test.go (new)
+- **Learnings for future iterations:**
+  - tmux capture-pane trims trailing whitespace — "I-search: " (with trailing space) becomes "I-search:" in assertions
+  - Search forward/backward both wrap around the buffer (modular arithmetic in SearchForward/SearchBackward)
+  - Unrecognized keys in search mode exit search AND get re-posted via screen.PostEvent — so the key is processed normally
+  - Backspace in search re-searches from the ORIGINAL cursor position (searchOrigR/C), not the current match position
+  - C-s during forward search advances to next match (startC+1); C-r during backward search uses current position
 ---
