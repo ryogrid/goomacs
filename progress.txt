@@ -357,3 +357,21 @@
   - resizeAndRedraw helper sends C-g after resize for normal-mode tests; search/minibuffer tests use mode-appropriate keys
   - Harness.Resize() updates h.width and h.height so Capture() trims to the correct new dimensions
 ---
+
+## 2026-03-16 - US-017
+- Created e2e/comprehensive_interaction_test.go with TestComprehensiveInteraction test group (7 subtests)
+- Tests search while region active: search with active mark, accept search, verify editor functional after
+- Tests undo after yank: C-k to fill kill ring, C-y to paste, C-_ to undo — yanked text removed
+- Tests undo after kill region: C-Space, move, C-w to kill, C-_ to undo — region text restored
+- Tests C-x C-f during search: unrecognized C-x exits search, re-posts as C-x prefix, C-f opens find-file
+- Tests split window then kill buffer: C-x 2 split, open second file, C-x k kills buffer, window shows next buffer
+- Tests comment-region then undo: M-x comment-region adds "// " prefix, C-_ undo removes comments
+- Tests save then undo: C-x C-s saves, C-_ undo past save point restores [Modified] in status bar
+- All 7 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_interaction_test.go (new)
+- **Learnings for future iterations:**
+  - Long Go test TempDir paths truncate status bar in 80-col terminal — use shortTempFile() for tests that need to check [Modified] in status bar
+  - Search mode exits on C-x (unrecognized key) and re-posts it — the C-x prefix mode then captures the next key (C-f) correctly
+  - Comment-region undo works as a single undo step (SaveUndo called once for the entire region operation)
+  - Undo past save point correctly re-sets Modified=true, showing [Modified] in status bar
+---

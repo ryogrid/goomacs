@@ -351,7 +351,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "These tests exercise the interaction between subsystems. For undo after yank: first kill a line (C-k), move somewhere, paste (C-y), then undo (C-_) — verify the pasted text disappears. For save then undo: type text, save, undo the text, verify [Modified] reappears in status bar. For search + find-file: press C-s, type query, then C-x C-f — search should exit and find-file prompt should appear."
     },
     {
