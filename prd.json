@@ -434,7 +434,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": "This is the final gate. Run the full test suite end-to-end. If any test fails, investigate and fix before marking this story as passed. The goal is zero critical/high failures and all tests green. Document any remaining low-severity known issues."
     }
   ]
