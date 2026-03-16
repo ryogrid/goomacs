@@ -270,7 +270,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Use setupGrepFixtures pattern from existing e2e/grep_test.go — create temp dir with .go files containing known search terms. Use StartInDir to launch goomacs in that directory. For Alt keys, use tmux M-n/M-p syntax directly. Pipe grep through sort for predictable output order. For non-result line test, add an empty line or comment to the grep buffer and try Enter on it."
     },
     {

@@ -42,6 +42,8 @@
 - CursorR is per-Buffer (shared), ScrollOffset is per-Window — scrolling in one window moves the cursor, causing the other window showing the same buffer to auto-scroll too; test independent scroll with different buffers
 - Search mode: unrecognized keys exit search and re-post via screen.PostEvent for normal processing
 - Empty buffer invariant: always at least 1 empty line ([][]rune{{}}), never zero lines
+- Grep buffer stdout is TrimRight("\n") before Split — exactly N lines for N results, no trailing empty line
+- Mode handler dispatch runs BEFORE read-only guard — grep mode Enter works despite ReadOnly=true
 
 ## Progress: Comprehensive E2E Testing Framework
 
@@ -264,4 +266,28 @@
   - Multiple file matches show "[match1 match2]" appended to the message line
   - Multiple M-x matches show space-separated command names (no brackets)
   - Esc and C-g both handled by KeyCtrlG/KeyEsc case in minibuffer handler
+---
+
+## 2026-03-16 - US-013
+- Created e2e/comprehensive_grep_test.go with TestComprehensiveGrep test group (23 subtests)
+- Tests M-x find-grep invocation: verifies "Run find-grep:" prompt with default command
+- Tests Enter on valid result: opens correct file at correct line number
+- Tests Enter on non-result line (header): shows "No grep result on this line", stays in grep buffer
+- Tests n/p navigation: forward/backward through results, multi-file traversal
+- Tests n at last result / p at first result: "No more results" message, cursor stays
+- Tests M-n/M-p file navigation: jumps between files, boundary messages at first/last file
+- Tests g (refresh): re-executes command after file changes, shows updated results
+- Tests q (quit): closes grep buffer, returns to previous buffer
+- Tests read-only: regular chars, backspace, C-k all blocked with "Buffer is read-only"
+- Tests no matches: "No matches found" message, stays on scratch buffer
+- Tests Enter then return to grep via C-x b, Enter on multiple files
+- Tests refresh with removed matches, quit then re-invoke grep
+- All 23 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_grep_test.go (new)
+- **Learnings for future iterations:**
+  - Grep buffer stdout is trimmed of trailing newlines before split — buffer has exactly N lines for N results (no trailing empty line)
+  - Mode handler (grepModeHandler) runs BEFORE read-only guard in event dispatch — so Enter in grep buffer is handled by grep handler, not blocked by read-only
+  - To test Enter on non-result lines, use a command that produces non-parseable output (e.g., `echo 'HEADER' && grep ...`)
+  - invokeFindGrep helper clears 50 chars of default command with BSpace — sufficient for the default "find . -type f -exec grep -nH -e '' {} +" (45 chars)
+  - Grep results from `grep -rnH marker . | sort` on 3-file fixture produce 4 results: a.txt:2, b.txt:1, b.txt:3, c.txt:3
 ---
