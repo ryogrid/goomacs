@@ -133,3 +133,22 @@
   - BSpace is the tmux key name for Backspace
   - C-j behaves identically to Enter (both InsertNewline)
 ---
+
+## 2026-03-16 - US-007
+- Created e2e/comprehensive_killyank_test.go with TestComprehensiveKillYank test group (23 subtests)
+- Tests C-k: kill to end of line, at end of line (joins next), on empty line, consecutive kills accumulate
+- Tests consecutive kill chain breaking: C-f between C-k operations creates separate kill ring entries
+- Tests C-w: single-line region, multi-line region, zero-width region (no-op), backward region (point before mark)
+- Tests M-w: copies without deleting, subsequent C-y pastes correctly
+- Tests C-y: single-line yank, multi-line yank, yank into empty buffer, empty kill ring (no change)
+- Tests region+yank interaction: set mark, move, kill, move elsewhere, yank
+- Tests round-trips: C-k/C-y, C-w/C-y, M-w/C-y all restore content correctly
+- All 23 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_killyank_test.go (new)
+- **Learnings for future iterations:**
+  - C-Space in tmux sends as "C-Space" — harness handles it correctly for SetMark
+  - M-w (copy region) is sent as Escape + 50ms + "w" (same pattern as M-v, M-<, M->)
+  - ClearLastKill is called on any non-C-k key, so C-f between kills creates separate entries
+  - Kill ring entries from C-w/M-w are always separate (not affected by lastKill flag)
+  - Zero-width C-w (mark == point) is a no-op — buffer unchanged, mark deactivated
+---

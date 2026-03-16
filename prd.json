@@ -134,7 +134,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "For consecutive kill accumulation test: C-k twice on a two-line buffer, then move and C-y — should paste both killed lines. For separate kills test: C-k, then C-f (breaks consecutive chain), then C-k, then C-y — should only paste the second kill. For M-w (copy region), send C-Space to set mark, move with C-f/C-n, then Escape w to copy, then C-y to paste."
     },
     {
