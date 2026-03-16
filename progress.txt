@@ -49,6 +49,8 @@
 - tmux capture-pane renders tabs as spaces — cannot assert literal "\t" in screen captures; use text content assertions instead
 - invokeCommand(h, "cmdName") helper: Escape+50ms+x+200ms+cmdName+100ms+Enter+300ms for M-x commands
 - Harness.Resize(w, h) resizes tmux window; must send a key afterward to force redraw in capture-pane output
+- Go test binary runs from package directory (e2e/), not project root — failureLogPath uses "../tasks/e2e-failures.json"
+- Full comprehensive suite: ~262 seconds, 212+ subtests across 13 test groups + 1 summary test
 
 ## Progress: Comprehensive E2E Testing Framework
 
@@ -374,4 +376,23 @@
   - Search mode exits on C-x (unrecognized key) and re-posts it — the C-x prefix mode then captures the next key (C-f) correctly
   - Comment-region undo works as a single undo step (SaveUndo called once for the entire region operation)
   - Undo past save point correctly re-sets Modified=true, showing [Modified] in status bar
+---
+
+## 2026-03-16 - US-018
+- Ran full comprehensive E2E test suite: `go test ./e2e/ -v -run TestComprehensive -timeout 30m`
+- All 212+ subtests across 13 comprehensive test groups pass without panics or hangs
+- Created e2e/comprehensive_suite_test.go with TestComprehensiveZZZ_Summary (runs last alphabetically) to print failure summary
+- Integrated ResetFailureLog() into TestMain to clear failure log at start of each run
+- Fixed failureLogPath from "tasks/e2e-failures.json" to "../tasks/e2e-failures.json" (Go tests run from package directory)
+- tasks/e2e-failures.json generated as empty array (all tests pass)
+- Tests are deterministic: two consecutive runs produce same results (257 PASS lines each)
+- Tests are isolated: each test creates its own tmux session and temp files via Harness
+- Baseline tests (48 non-comprehensive) still pass
+- go vet ./... passes
+- Files changed: e2e/comprehensive_suite_test.go (new), e2e/e2e_test.go (modified), e2e/failure_logger.go (modified), tasks/e2e-failures.json (new)
+- **Learnings for future iterations:**
+  - Go test binary runs from the package directory (e2e/), not the project root — relative paths need "../" prefix to reach project root
+  - TestComprehensiveZZZ_Summary runs last due to alphabetical ordering of test functions
+  - Full comprehensive suite takes ~262 seconds (~4.4 minutes) for all 13 test groups
+  - ResetFailureLog() in TestMain ensures clean failure log on each run
 ---

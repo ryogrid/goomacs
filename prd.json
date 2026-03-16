@@ -369,7 +369,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "This story is about running the full suite and collecting results. If any tests fail, record them using the failure logger from US-004. Review the failures and categorize by severity. Do NOT fix bugs in this story — that is handled in subsequent stories. Focus on ensuring all tests run to completion and the failure report is generated."
     },
     {
