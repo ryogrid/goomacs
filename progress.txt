@@ -90,3 +90,22 @@
   - Call ResetFailureLog() in TestMain or at suite start to clear previous run's data
   - Severity levels: "critical", "high", "medium", "low"
 ---
+
+## 2026-03-16 - US-005
+- Created e2e/comprehensive_movement_test.go with TestComprehensiveMovement test group (37 subtests)
+- Tests all movement keys: C-f, C-b, C-n, C-p, C-a, C-e, C-v, M-v, M-<, M->
+- Tests all arrow keys: Left, Right, Up, Down
+- Tests boundary conditions: end of buffer, start of buffer, empty buffer, empty lines
+- Tests line wrapping: C-f at end of line wraps to next, C-b at start of line wraps to previous
+- Tests column clamping: C-n/C-p from long line to short line
+- Tests page up/down near buffer boundaries (partial page remaining)
+- Tests multiple page navigation (3 pages down, 3 pages up)
+- All 37 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_movement_test.go (new)
+- **Learnings for future iterations:**
+  - Arrow keys (Left/Right/Up/Down) behave identically to C-b/C-f/C-p/C-n — same MoveForward/MoveBackward/MoveUp/MoveDown calls
+  - Column clamping does NOT remember original column — after clamping on a short line, moving to a longer line keeps the clamped column
+  - M-v (page up) sent via tmux as `Escape` + 50ms sleep + `v`
+  - Empty *scratch* buffer starts at (0,0) and all movement keys are no-ops
+  - Page tests need longer sleep (200-300ms) due to scroll + redraw time
+---

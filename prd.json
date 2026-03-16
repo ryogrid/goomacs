@@ -93,7 +93,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Use existing Harness from harness.go. Create temp files with known content for multi-line tests. Use AssertCursorAt() to verify cursor positions after each movement. For page up/down boundary tests, create a file with exactly 30 lines and test C-v at line 20 (less than a full page remaining). For column clamping, create lines of different lengths (e.g., 'short' and 'this is a longer line') and verify cursor column after C-n/C-p."
     },
     {
