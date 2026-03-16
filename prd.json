@@ -311,7 +311,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "For confirm mode test: modify a buffer, then C-x k to trigger 'Buffer modified; kill anyway? (y/n)' prompt. Press various invalid keys (a, C-f, Enter) and verify the prompt remains. For rapid mode switching, use a loop sending C-s then C-g with minimal sleep. After the loop, verify the buffer is unchanged by comparing screen capture. For C-x invalid key, send C-x then 'a' and verify the editor returns to normal mode."
     },
     {
