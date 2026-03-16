@@ -385,7 +385,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": "If tasks/e2e-failures.json has no critical entries, mark this story as passed immediately. Critical bugs include: editor crashes (panic), data loss (buffer content corrupted), hangs (infinite loop). Fix the root cause in the source code, not by adjusting the test."
     },
     {
