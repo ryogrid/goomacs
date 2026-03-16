@@ -4,7 +4,7 @@ The event loop in `main.go` is the central coordinator of goomacs. It polls term
 
 ## Event Loop State Machine
 
-The event loop operates as a state machine with five modes, checked in priority order:
+The event loop operates as a state machine with six modes, checked in priority order:
 
 ```mermaid
 stateDiagram-v2
@@ -13,13 +13,14 @@ stateDiagram-v2
     Normal --> SearchFwd : C-s
     Normal --> SearchBwd : C-r
     Normal --> CxPrefix : C-x
+    Normal --> MinibufferMode : C-l (goto line), M-x (command)
     Normal --> Normal : editing / movement
 
-    CxPrefix --> Normal : C-s (save), C-c (quit), 2/o/0/1
+    CxPrefix --> Normal : C-s (save), C-c (quit), 2/3/o/0/1
     CxPrefix --> MinibufferMode : C-f (find-file), b (switch), k (kill)
 
     MinibufferMode --> Normal : Enter (accept callback)
-    MinibufferMode --> Normal : C-g (cancel)
+    MinibufferMode --> Normal : C-g / Esc (cancel)
 
     MinibufferMode --> ConfirmMode : callback triggers confirm
 
@@ -29,6 +30,9 @@ stateDiagram-v2
     SearchFwd --> SearchBwd : C-r
     SearchBwd --> Normal : Enter / C-g / unhandled key
     SearchBwd --> SearchFwd : C-s
+
+    Normal --> BufferMode : buffer has Mode set
+    BufferMode --> Normal : mode handler returns false
 ```
 
 ### Mode Priority
@@ -37,7 +41,10 @@ Modes are checked in this order during key dispatch:
 
 ```mermaid
 flowchart TD
-    A[PollEvent] --> B{searchMode?}
+    A[PollEvent] --> A1{grepResultCh<br/>has data?}
+    A1 -->|yes| A2[Process grep results<br/>populate *grep* buffer]
+    A1 -->|no| B{searchMode?}
+    A2 --> B
     B -->|yes| C[Handle Search Keys]
     B -->|no| D{minibufferMode?}
     D -->|yes| E[Handle Minibuffer Input]
@@ -45,7 +52,11 @@ flowchart TD
     F -->|yes| G[Handle y/n]
     F -->|no| H{prefixCx?}
     H -->|yes| I[Handle C-x Second Key]
-    H -->|no| J[Handle Normal Keys]
+    H -->|no| H2{buffer Mode set?}
+    H2 -->|yes| H3[modeHandlers dispatch]
+    H3 -->|handled| K
+    H3 -->|not handled| J
+    H2 -->|no| J[Handle Normal Keys]
 
     C --> K[redraw]
     E --> K
@@ -72,8 +83,10 @@ flowchart TD
 | `searchHasMatch` | `bool` | Whether query matches |
 | `minibufferMode` | `bool` | In minibuffer text input |
 | `minibufferPrompt` | `string` | Prompt text (e.g., "Find file: ") |
-| `minibufferInput` | `string` | User input so far |
+| `minibufferInput` | `[]rune` | User input so far |
+| `minibufferCursorPos` | `int` | Cursor position within minibuffer input |
 | `minibufferCallback` | `func(string)` | Called on Enter with input |
+| `splitMode` | `string` | `"vertical"` (C-x 2) or `"horizontal"` (C-x 3) |
 | `confirmMode` | `bool` | Waiting for y/n confirmation |
 | `confirmCallback` | `func(bool)` | Called with true (y) or false (n) |
 | `message` | `string` | Message displayed on bottom line |
@@ -135,6 +148,8 @@ classDiagram
         +ScrollOffset int
         +StartRow int
         +Height int
+        +StartCol int
+        +Width int
         +ViewHeight() int
         +AdjustScroll()
         +ScrollDown(viewHeight int)
@@ -143,10 +158,13 @@ classDiagram
 ```
 
 - `ViewHeight()` returns `Height - 1` (reserves 1 row for the status line)
+- `StartCol` / `Width` -- used for horizontal split layout (side-by-side windows)
 - `AdjustScroll()` ensures the buffer's cursor is visible within this window's viewport
 - `ScrollDown()`/`ScrollUp()` implements page movement, adjusting cursor if needed
 
 ### Window Layout
+
+**Vertical split (C-x 2) -- default:**
 
 ```
 ┌──────────────────────────────────┐
@@ -162,19 +180,30 @@ classDiagram
 └──────────────────────────────────┘
 ```
 
-`recalcWindows()` distributes rows evenly:
+**Horizontal split (C-x 3) -- side-by-side:**
+
 ```
-available = screenHeight - 1   (reserve 1 for message line)
-baseH     = available / len(windows)
-extra     = available % len(windows)
+┌────────────────┬─────────────────┐
+│  Window 0      │  Window 1       │
+│  (Col=0, W=40) │  (Col=41, W=39) │
+│  ... content   │  ... content    │
+│  == main.go  ==│  -- buf.go    --│
+├────────────────┴─────────────────┤
+│  message line                    │
+└──────────────────────────────────┘
 ```
-First `extra` windows get `baseH + 1` rows; the rest get `baseH`.
+
+`recalcWindows()` distributes space evenly based on `splitMode`:
+
+- **Vertical**: distributes rows. `available = screenHeight - 1`. First `extra` windows get `baseH + 1` rows.
+- **Horizontal**: distributes columns. Windows share full height. A `│` separator column is drawn between windows.
 
 ### Window Commands (via C-x prefix)
 
 | Sequence | Command | Behavior |
 |----------|---------|----------|
-| `C-x 2` | split-window | Creates a new window with the same buffer; recalculates layout |
+| `C-x 2` | split-window-vertically | Creates a new window below; sets `splitMode = "vertical"` |
+| `C-x 3` | split-window-horizontally | Creates a new window to the right; sets `splitMode = "horizontal"` |
 | `C-x o` | other-window | Cycles `activeWindowIdx` to next window |
 | `C-x 0` | delete-window | Closes current window (must have >1); recalculates layout |
 | `C-x 1` | delete-other-windows | Keeps only active window; recalculates layout |
@@ -248,7 +277,33 @@ sequenceDiagram
     Note over MB: minibufferMode = false
 ```
 
-Used by: `C-x C-f` (find-file), `C-x b` (switch-buffer), `C-x k` (kill-buffer), `C-x C-s` (save with no filename).
+### Minibuffer Key Bindings
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Accept input, call callback |
+| `C-g` / `Esc` | Cancel, clear input |
+| `C-h` / `Backspace` | Delete character before cursor |
+| `C-d` | Delete character at cursor |
+| `C-k` | Kill from cursor to end |
+| `C-a` | Move cursor to beginning |
+| `C-e` | Move cursor to end |
+| `C-f` / `Right` | Move cursor forward |
+| `C-b` / `Left` | Move cursor backward |
+| `Tab` | Context-aware completion |
+
+### Tab Completion
+
+Tab completion behavior depends on the minibuffer prompt:
+
+| Prompt | Completion Source |
+|--------|------------------|
+| `"Find file: "` | File system paths (directory listing) |
+| `"M-x "` | Registered command names via `FindCommandsByPrefix()` |
+
+When multiple completions exist, the longest common prefix is inserted. When a single match exists, it is completed in full.
+
+Used by: `C-x C-f` (find-file), `C-x b` (switch-buffer), `C-x k` (kill-buffer), `C-x C-s` (save with no filename), `C-l` (goto line), `M-x` (execute command), `find-grep` (grep command).
 
 ## Confirm Mode
 
@@ -299,10 +354,42 @@ flowchart LR
         CS["C-SPC: SetMark"]
         CG["C-g: DeactivateMark / Cancel"]
         CU["C-_: Undo"]
+        CL["C-l: Goto Line (minibuffer)"]
+        MX["M-x: Execute Command (minibuffer)"]
     end
 ```
 
 **Important**: All editing operations call `buf.SaveUndo()` before the operation. Non-kill keys call `buf.ClearLastKill()` to reset the consecutive-kill tracker.
+
+### Buffer Mode Handlers
+
+Buffers can have a buffer-local `Mode` string. When set, the event loop checks `modeHandlers[mode]` before normal key dispatch:
+
+```mermaid
+flowchart TD
+    A[Key event in normal dispatch] --> B{buf.Mode != empty?}
+    B -->|yes| C["handler = modeHandlers[buf.Mode]"]
+    C --> D{handler exists?}
+    D -->|yes| E["handler(ev, buf, &message)"]
+    E --> F{returned true?}
+    F -->|yes| G[Event consumed by mode handler]
+    F -->|no| H[Fall through to normal dispatch]
+    D -->|no| H
+    B -->|no| H
+```
+
+Mode handlers are registered via `init()` functions. Currently registered:
+
+| Mode | Handler | Source |
+|------|---------|--------|
+| `"grep"` | `grepModeHandler` | `grep.go` |
+
+### Special Buffer Behaviors
+
+| Buffer | Behavior |
+|--------|----------|
+| `*Buffer List*` | `Enter` on a line switches to that buffer |
+| `*grep*` | Grep mode handler active (see [grep.md](grep.md)) |
 
 ### Alt Key Handling
 
@@ -392,8 +479,7 @@ Each window has its own status line. Active vs inactive windows use different st
 | Border chars | `==` | `--` |
 | Left side | `== filename [Modified]` | `-- filename [Modified]` |
 | Right side | `Line R/Total, Col C ==` | `Line R/Total, Col C --` |
-
-Both are rendered in reverse video.
+| Style | Reverse video | Default style with `--` borders |
 
 ### drawMessageLine
 
@@ -424,6 +510,28 @@ The `redraw()` function is defined as a closure inside `main()`:
 ```
 
 This is called after every key event and resize event.
+
+## Async Grep Result Handling
+
+The event loop integrates with the async grep system via a non-blocking channel check:
+
+```mermaid
+sequenceDiagram
+    participant Grep as grep goroutine
+    participant Ch as grepResultCh
+    participant Loop as Event Loop
+    participant Buf as *grep* Buffer
+
+    Grep->>Ch: grepResultMsg{stdout, stderr, err}
+    Grep->>Loop: PostEvent(KeyNUL) — wake up loop
+    Loop->>Ch: non-blocking receive
+    Ch-->>Loop: grepResultMsg
+    Loop->>Buf: populate with parsed grep output
+    Loop->>Buf: set Mode = "grep", ReadOnly = true
+    Loop->>Loop: switch to *grep* buffer
+```
+
+This check runs at the top of the event loop, before mode dispatch, using a `select` with `default` fallthrough.
 
 ## Complete Event Processing Flow
 

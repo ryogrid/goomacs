@@ -21,6 +21,8 @@ classDiagram
         +UndoStack []undoEntry
         +Highlight *Highlighter
         +HighlightDirty bool
+        +Mode string
+        +ReadOnly bool
         +NewBuffer() *Buffer
         +NewBufferFromFile(path) (*Buffer, error)
         +InsertChar(ch rune)
@@ -193,8 +195,13 @@ graph TD
 
 ### File I/O
 
-- `NewBufferFromFile(path)` -- Reads a file, splits by newlines, initializes buffer with content, filename, and a `Highlighter` (via `NewHighlighter(filename)`). Sets `HighlightDirty = true`.
+- `NewBufferFromFile(path)` -- Reads a file, splits by newlines, initializes buffer with content, filename, and a `Highlighter` (via `NewHighlighter(filename)`). Sets `HighlightDirty = true`. Removes trailing newline to avoid extra empty line.
 - `NewBuffer()` -- Creates an empty buffer with one empty line. No highlighter attached (used for `*scratch*` and similar special buffers). Sets `HighlightDirty = true`.
+
+### Buffer-Local Mode and ReadOnly
+
+- `Mode string` -- Buffer-local mode identifier (empty string for normal editing). When set, the event loop checks `modeHandlers[mode]` before normal key dispatch. Currently used by `"grep"` mode for find-grep result buffers.
+- `ReadOnly bool` -- When true, editing operations are blocked by the event loop. Used for special buffers like `*Buffer List*` and `*grep*`.
 - `Save()` -- Writes buffer content to `Filename`. Uses atomic write (temp file + rename) for safety. Adds trailing newline. Returns `errNoFilename` if no filename is set.
 
 ### Syntax Highlighting Integration
