@@ -36,6 +36,11 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	// Reset failure log before running tests
+	if err := ResetFailureLog(); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to reset failure log: %v\n", err)
+	}
+
 	os.Exit(m.Run())
 }
 

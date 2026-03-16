@@ -22,7 +22,7 @@ type FailureRecord struct {
 
 var (
 	failureMu      sync.Mutex
-	failureLogPath = "tasks/e2e-failures.json"
+	failureLogPath = "../tasks/e2e-failures.json"
 )
 
 // ResetFailureLog clears the failure log file, starting fresh for a new test run.
