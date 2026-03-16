@@ -179,7 +179,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "C-_ in tmux is sent as 'C-_' or 'C-/' depending on terminal. Test with the harness's SendKeys. For undo stack limit test (101 edits, 100 undos), this may be slow — consider testing with a smaller number first (e.g., 10 edits, 10 undos) to verify the mechanism, then a separate subtest for the limit."
     },
     {

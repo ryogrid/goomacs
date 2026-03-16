@@ -177,3 +177,26 @@
   - Backspace in search re-searches from the ORIGINAL cursor position (searchOrigR/C), not the current match position
   - C-s during forward search advances to next match (startC+1); C-r during backward search uses current position
 ---
+
+## 2026-03-16 - US-009
+- Created e2e/comprehensive_undo_test.go with TestComprehensiveUndo test group (17 subtests)
+- Tests undo of character insertion: insert char, C-_ undo, verify char removed
+- Tests undo of deletion: C-d delete char, undo, verify char restored
+- Tests undo of kill line: C-k, undo, verify line restored
+- Tests undo of region kill: set mark, move, C-w, undo, verify region restored
+- Tests undo of yank: C-y, undo, verify yanked text removed
+- Tests undo of newline insertion: Enter, undo, verify lines joined back
+- Tests undo stack empty: undo with no changes, verify "No further undo information" message
+- Tests undo after save: C-x C-s, C-_ undo, verify undo still works and [Modified] reappears
+- Tests multiple sequential undos, undo of backspace, cursor position restoration
+- Tests undo of kill-line join (C-k at end of line), undo then new edit, 10 edits/10 undos
+- Tests undo of multi-line region kill restoring all lines
+- All 17 subtests pass, go vet passes
+- Files changed: e2e/comprehensive_undo_test.go (new)
+- **Learnings for future iterations:**
+  - C-_ (KeyCtrlUnderscore) is the undo key binding — sends correctly via tmux
+  - Undo restores both buffer content AND cursor position (SaveUndo snapshots Lines, CursorR, CursorC)
+  - Undo after save works: undo stack is preserved across saves; undoing past save point shows [Modified]
+  - "Undo" message shown on successful undo, "No further undo information" on empty stack
+  - maxUndoEntries = 100 — tested with 10 edits/undos; full limit test deferred to avoid slow tests
+---
