@@ -52,7 +52,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Reference tasks/e2e-factor-analysis.md for factors and tasks/e2e-noop-boundary-cases.md for edge cases. Infeasible combinations to prune: Grep mode + Confirm mode, Read-only buffer + Editing operation (tested separately in no-op), Minibuffer mode + Window commands, Search mode + C-x prefix. Consider using a covering array algorithm or manual construction. Group by theme for readability."
     },
     {

@@ -64,3 +64,17 @@
   - Empty buffer always has at least 1 empty line ([][]rune{{}}) — never zero lines
 ---
 
+
+## 2026-03-16 - US-003
+- Created tasks/e2e-test-matrix.md with 385 test cases across 13 thematic groups
+- Groups: Movement (60), Editing (40), Kill/Yank (35), Search (30), Buffer Mgmt (25), Window Mgmt (30), Grep (25), Minibuffer (35), Undo (20), Comment (15), Error/No-ops (30), Resize (15), Cross-Feature (25)
+- 3-way combinatorial coverage achieved within each group's relevant factors
+- Documented 10 infeasible combination exclusions with rationale
+- Each test case has unique ID (TC-{group}-{number}), factor values, input sequence, expected post-condition
+- Files changed: tasks/e2e-test-matrix.md (new)
+- **Learnings for future iterations:**
+  - 385 test cases is within the 200-400 target; thematic grouping makes the matrix manageable
+  - Cross-feature interactions (TC-XFEAT) are the most complex to implement — they test subsystem boundaries
+  - C-x prefix fallthrough means some "no-op" keys actually DO something (e.g., C-x C-n cancels prefix AND moves down, C-x a cancels prefix AND inserts 'a')
+  - For test implementation, SmallML (5-30 lines of known content) is the standard baseline buffer
+---
