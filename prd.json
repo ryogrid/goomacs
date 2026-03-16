@@ -246,7 +246,7 @@
         "Typecheck passes (go vet ./...)"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "For cursor movement tests, invoke C-x C-f to enter minibuffer, type some text, then use C-a/C-e/C-f/C-b to move, and C-d/C-k to edit. Verify by capturing the message line which shows the prompt + input. For Tab completion, create temp files with known names, invoke C-x C-f, type partial path, press Tab, verify completion in message line."
     },
     {

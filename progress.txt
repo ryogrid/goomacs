@@ -243,3 +243,25 @@
   - Window split creates new Window with same Buffer and same ScrollOffset; C-x o switches activeWindowIdx
   - After C-x 0 with single window, editor stays functional (no crash, no message — just a no-op)
 ---
+
+## 2026-03-16 - US-012
+- Created e2e/comprehensive_minibuffer_test.go with TestComprehensiveMinibuffer test group (25 subtests)
+- Tests cursor movement: C-a (beginning), C-e (end), C-f (forward), C-b (backward) within minibuffer input
+- Tests boundary cursor movement: C-f at end (no-op), C-b at beginning (no-op)
+- Tests editing: C-d (delete forward), C-k (kill to end), Backspace (delete backward)
+- Tests boundary editing: C-d at end (no-op), C-k at end (no-op), Backspace at beginning (no-op)
+- Tests editing in middle of input: C-d, C-k, Backspace all work correctly at arbitrary cursor positions
+- Tests cancel: C-g and Esc both clear input and show "Quit"
+- Tests Tab completion for file paths: single match (completes fully), multiple matches (longest common prefix + list), no matches (no change), directory completion (trailing slash)
+- Tests Tab completion for M-x commands: single match (find-grep), multiple matches (shows list), no matches (no change)
+- Tests combined edit-then-submit workflow
+- All 25 subtests pass, go vet passes, baseline tests unaffected
+- Files changed: e2e/comprehensive_minibuffer_test.go (new)
+- **Learnings for future iterations:**
+  - Minibuffer cursor position is tracked by minibufferCursorPos — insertions/deletions happen at this position
+  - Tab completion behavior differs by prompt: "Find file: " does filesystem completion, "M-x " does command completion
+  - Directory completion appends trailing "/" to allow continued path entry
+  - Multiple file matches show "[match1 match2]" appended to the message line
+  - Multiple M-x matches show space-separated command names (no brackets)
+  - Esc and C-g both handled by KeyCtrlG/KeyEsc case in minibuffer handler
+---
